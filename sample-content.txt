@@ -1,0 +1,41 @@
+
+
+
+  <div class="ob-sections">
+
+
+
+  <div
+    class="ob-section ob-section-html "
+      >
+
+<p>Cet article est un brouillon.</p>
+
+<p>Il est ajout&eacute; au carroussel</p>
+
+<p>Il est dans la cat&eacute;gorie principale test</p>
+
+<p>Les commentaires sont interdits</p>
+
+<p>Il a une image de couverture</p>
+
+<p>Il a une section lien externe vers PluXml</p>
+
+<p>Il a une section citation</p>
+
+<p>Il a une section images depuis un album photos</p>
+    </div>
+
+
+          <div
+    class="ob-section ob-section-quote "
+      ><blockquote class="ob-quote" cite=""><svg class="ob-quote-left" width="25px" height="24px" viewBox="0 0 25 24" xmlns="http://www.w3.org/2000/svg"><path
+                d="M0.145536,21.327864 C0.145536,22.452232 1.088732,23.363128 2.253256,23.363128 L9.103694,23.363128 C10.268276,23.363128 11.211588,22.452232 11.211588,21.327864 L11.211588,13.187312 C11.211588,12.062888 10.268276,11.15216 9.103694,11.15216 L5.72067,11.15216 C5.135508,11.15216 4.66681,10.694248 4.66681,10.13464 C4.66681,9.951464 4.71408,9.824288 4.71408,9.824288 C5.483392,7.361576 7.42761,5.387576 9.920276,4.512576 L9.930716,4.502384 C10.684542,4.192144 11.21153,3.469464 11.21153,2.629912 C11.21153,1.5056 10.268218,0.594816 9.103636,0.594816 C8.819088,0.594816 8.550548,0.650704 8.303004,0.747304 L8.207652,0.783144 C3.49144,2.55868 0.145536,6.9852 0.145536,12.16968 L0.145536,21.327864 L0.145536,21.327864 Z M13.84647,21.327864 C13.84647,22.452232 14.789666,23.363128 15.954248,23.363128 L22.804744,23.363128 C23.969268,23.363128 24.912464,22.452232 24.912464,21.327864 L24.912464,13.187312 C24.912464,12.062888 23.969268,11.15216 22.804744,11.15216 L19.421604,11.15216 C18.8365,11.15216 18.367802,10.694248 18.367802,10.13464 C18.367802,9.946368 18.414956,9.824288 18.414956,9.824288 C19.184442,7.361576 21.128602,5.387576 23.621326,4.512576 L23.631766,4.502384 C24.385476,4.192144 24.912464,3.469464 24.912464,2.629912 C24.912464,1.5056 23.969268,0.594816 22.804744,0.594816 C22.520196,0.594816 22.25154,0.650704 22.004054,0.747304 L21.908702,0.783144 C17.192374,2.55868 13.84647,6.9852 13.84647,12.16968 L13.84647,21.327864 L13.84647,21.327864 Z"></path></svg><p>Les cons ça ose tout ! C&#039;est à ça qu&#039;on les reconnait</p><svg class="ob-quote-right" width="25px" height="24px" viewBox="0 0 25 24" xmlns="http://www.w3.org/2000/svg"><path
+                d="M0.145536,21.327864 C0.145536,22.452232 1.088732,23.363128 2.253256,23.363128 L9.103694,23.363128 C10.268276,23.363128 11.211588,22.452232 11.211588,21.327864 L11.211588,13.187312 C11.211588,12.062888 10.268276,11.15216 9.103694,11.15216 L5.72067,11.15216 C5.135508,11.15216 4.66681,10.694248 4.66681,10.13464 C4.66681,9.951464 4.71408,9.824288 4.71408,9.824288 C5.483392,7.361576 7.42761,5.387576 9.920276,4.512576 L9.930716,4.502384 C10.684542,4.192144 11.21153,3.469464 11.21153,2.629912 C11.21153,1.5056 10.268218,0.594816 9.103636,0.594816 C8.819088,0.594816 8.550548,0.650704 8.303004,0.747304 L8.207652,0.783144 C3.49144,2.55868 0.145536,6.9852 0.145536,12.16968 L0.145536,21.327864 L0.145536,21.327864 Z M13.84647,21.327864 C13.84647,22.452232 14.789666,23.363128 15.954248,23.363128 L22.804744,23.363128 C23.969268,23.363128 24.912464,22.452232 24.912464,21.327864 L24.912464,13.187312 C24.912464,12.062888 23.969268,11.15216 22.804744,11.15216 L19.421604,11.15216 C18.8365,11.15216 18.367802,10.694248 18.367802,10.13464 C18.367802,9.946368 18.414956,9.824288 18.414956,9.824288 C19.184442,7.361576 21.128602,5.387576 23.621326,4.512576 L23.631766,4.502384 C24.385476,4.192144 24.912464,3.469464 24.912464,2.629912 C24.912464,1.5056 23.969268,0.594816 22.804744,0.594816 C22.520196,0.594816 22.25154,0.650704 22.004054,0.747304 L21.908702,0.783144 C17.192374,2.55868 13.84647,6.9852 13.84647,12.16968 L13.84647,21.327864 L13.84647,21.327864 Z"
+                transform="scale(-1,1) translate(-25)"></path></svg></blockquote><p class="ob-author">
+                            Audiard
+                    </p></div>              <div
+    class="ob-section ob-section-images ob-layout4-3"
+      ><div class="ob-row-2-col"><a href="https://image.eklablog.com/2wLNTmG-HGuAXTxTh0h9q9xt0gE=/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_cb1dc4_chauvesouris.jpg" class="ob-link-img"><img class="ob-cell ob-img ob-media" src="https://image.eklablog.com/-evdsuu_udjeUbIyubKGwhu8tFE=/300x225/smart/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_cb1dc4_chauvesouris.jpg" alt="Animaux" /></a><a href="https://image.eklablog.com/DVakRwDFoX55PNhciWotIogY79A=/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_db9555_chat.jpg" class="ob-link-img"><img class="ob-cell ob-img ob-media" src="https://image.eklablog.com/W5DeLTbnISRjXCkF1UgP7xrQup4=/300x225/smart/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_db9555_chat.jpg" alt="Animaux" /></a></div><div class="ob-row-2-col"><a href="https://image.eklablog.com/MN1ufWZKpL6XwrRtoNQm86OCP1o=/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_338cbc_cerf-rouge.jpg" class="ob-link-img"><img class="ob-cell ob-img ob-media" src="https://image.eklablog.com/7pmhZRRnNBo3mYFQSAaKPjBSDkI=/300x225/smart/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_338cbc_cerf-rouge.jpg" alt="Animaux" /></a><a href="https://image.eklablog.com/8FUv3YSlNgw41_Rn9kwMyq3A3aI=/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_377b22_araignee.jpg" class="ob-link-img"><img class="ob-cell ob-img ob-media" src="https://image.eklablog.com/Jd6D23swKBIWUf1p5cs-YO-zfP0=/300x225/smart/filters:no_upscale()/image%2F1279054%2F20250118%2Fob_377b22_araignee.jpg" alt="Animaux" /></a></div><p class="ob-desc">Animaux</p></div>
+
+  </div>

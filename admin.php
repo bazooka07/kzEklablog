@@ -25,8 +25,8 @@ if(!empty($_FILES['archive'])) {
 			$eklablog = simplexml_load_file($_FILES['archive']['tmp_name']);
 			break;
 		default:
-			plxMsg::Error('Mauvais format de fichier');
-			header('Location: ' . basename(__FILE__));
+			plxMsg::Error('Format de fichier inconnu : ' . $_FILES['archive']['type']);
+			header('Location: plugin.php?p=' . $plugin);
 			exit;
 	}
 
@@ -93,13 +93,27 @@ if(!empty($_FILES['archive'])) {
 
 			/*
 			 * A supprimer dans $post->content :
-			 * - <svg class="ob-quote-left"...>...</svg>
-			 * - <svg class="ob-quote-right"...>...</svg>
 			 *
 			 * Gérer <div   class="ob-section ob-section-images ...
 			 *  - </div><div class="ob-row-2-col">
 			 * */
-			$content = trim(html_entity_decode($post->content));
+			$patterns = array(
+				# Reformatage <div> de plusieurs lignes
+				'#^\s*<div[\s\r\n]+(\w[^>]+)[\s\r\n]*>#mi'	=> '<div \1>',
+				# Suppression image quote au format svg
+				'#\s*<svg\s+class="ob-quote-\w+"[^>]*>.*?</svg>#si' => '',
+				# Suppression lignes vides
+				'#^\s*[\r\n]+#m' => '',
+				# suppression espaces début ligne
+				'#^\s+#m'	=> '',
+				# double <div> sur une ligne
+				'#</div>\s+<div#'	=> "</div>\n<div",
+			);
+			# $content = html_entity_decode($post->content);
+			$content = preg_replace(array_keys($patterns), array_values($patterns), html_entity_decode($post->content));
+
+			# Pour récupeerer les urls des images :
+			# preg_match_all('#<img\ssrc="([^"]+)"#', $content, $matches);
 
 			$article = array(
 				'title'					=> trim($post->title), # cast String
@@ -163,10 +177,20 @@ if(!class_exists('ZipArchive')) {
 } elseif(!function_exists('simplexml_load_file')) {
 	plxMsg::Error('Librairie XML manquante');
 } else {
+	$maxFileSize = ini_get('upload_max_filesize');
+	if(preg_match('#^(\d+)M$#', $maxFileSize, $matches)) {
+		$maxFileSize = intval($matches[1]) * 1024 * 1024;
+	} elseif(preg_match('#^(\d+)K$#', $maxFileSize, $matches)) {
+		$maxFileSize = intval($matches[1]) * 1024;
+	}
 ?>
+<div class="in-action-bar">
+	<a href="https://lalutiniere.eklablog.com/" target="_blank">La Lutinière</a>
+</div>
+<div>Taille maxi du fichier : <span><?= preg_replace('#^(\d+)M#', '\1 Mo', ini_get('upload_max_filesize')) ?></span> </div>
 <form method="post" enctype="multipart/form-data">
 	<?= plxToken::getTokenPostMethod() ?>
-	<input type="hidden" name="MAX_FILE_SIZE" value="30000" />
+	<input type="hidden" name="MAX_FILE_SIZE" value="<?= $maxFileSize ?>" />
 	<input name="archive" type="file" accept="application/zip, text/xml" placeholder="Sélectionner la sauvegarde Eklablog" required>
 	<input type="submit">
 </form>
