@@ -12,20 +12,30 @@ plxToken::validateFormToken($_POST);
 $plxAdmin->checkProfil(PROFIL_ADMIN);
 
 if(!empty($_FILES['archive'])) {
-	# switch(mime_content_type($_FILES['archive']['tmp_name'])) {
-	switch($_FILES['archive']['type']) {
+	$filename = $_FILES['archive']['tmp_name'];
+	if(empty($filename)) {
+		# Laragon bug
+		# See https://stackoverflow.com/questions/73145407/unisharp-laravel-filemanager-cant-upload-on-laragon-server
+		# See https://www.php.net/manual/fr/ini.core.php#ini.upload-tmp-dir
+		$filename = sys_get_temp_dir() . '/' . $_FILES['archive']['full_path'];
+		header('Content-Type: text/plain;charset=utf-8');
+		var_dump($_FILES);
+	}
+
+	switch(mime_content_type($filename)) {
+		case 'application/x-zip-compressed' : # Xampp
 		case 'application/zip':
 			$zip = new ZipArchive();
-			if($zip->open($_FILES['archive']['tmp_name'])) {
+			if($zip->open($filename)) {
 				$eklablog = simplexml_load_string($zip->getFromIndex(0));
 				$zip->close();
 			}
 			break;
 		case 'text/xml':
-			$eklablog = simplexml_load_file($_FILES['archive']['tmp_name']);
+			$eklablog = simplexml_load_file($filename);
 			break;
 		default:
-			plxMsg::Error('Format de fichier inconnu : ' . $_FILES['archive']['type']);
+			plxMsg::Error('Format de fichier inconnu : ' . mime_content_type($filename) . ' (' . $filename . ')');
 			header('Location: plugin.php?p=' . $plugin);
 			exit;
 	}
@@ -168,6 +178,20 @@ if(!empty($_FILES['archive'])) {
 // include 'top.php';
 
 ?>
+<style>
+.<?= $plugin ?>-infos {
+	border: 1px solid #333;
+	padding: 0 1rem;
+	margin-bottom: 0.5rem;
+	max-width: 40rem;
+	border-radius: 1rem;
+}
+
+.<?= $plugin ?>-infos span {
+		background-color: #eee;
+		padding: 0.25rem 1rem;
+	}
+</style>
 <div class="action-bar">
 	<h2>Importation sauvegarde Eklablog</h2>
 </div>
@@ -187,7 +211,10 @@ if(!class_exists('ZipArchive')) {
 <div class="in-action-bar">
 	<a href="https://lalutiniere.eklablog.com/" target="_blank">La Lutinière</a>
 </div>
-<div>Taille maxi du fichier : <span><?= preg_replace('#^(\d+)M#', '\1 Mo', ini_get('upload_max_filesize')) ?></span> </div>
+<div class="<?= $plugin ?>-infos">
+	<p>Taille maxi du fichier : <span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
+	<p>Dossier pour téléverser : <span><?= sys_get_temp_dir() ?></span></p>
+</div>
 <form method="post" enctype="multipart/form-data">
 	<?= plxToken::getTokenPostMethod() ?>
 	<input type="hidden" name="MAX_FILE_SIZE" value="<?= $maxFileSize ?>" />
