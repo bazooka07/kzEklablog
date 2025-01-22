@@ -1,6 +1,4 @@
 <?php
-// include 'prepend.php';
-
 /*
  * https://overblog.uservoice.com/knowledgebase/articles/1852513-r%C3%A9diger-une-page
  * */
@@ -175,22 +173,31 @@ if(!empty($_FILES['archive'])) {
 	exit;
 }
 
-// include 'top.php';
-
 ?>
 <style>
+.<?= $plugin ?>-container {
+	max-width: 64rem;
+}
+
 .<?= $plugin ?>-infos {
 	border: 1px solid #333;
 	padding: 0 1rem;
 	margin-bottom: 0.5rem;
-	max-width: 40rem;
 	border-radius: 1rem;
 }
 
 .<?= $plugin ?>-infos span {
-		background-color: #eee;
-		padding: 0.25rem 1rem;
-	}
+	background-color: #eee;
+	padding: 0.25rem 1rem;
+}
+
+#<?= $plugin ?>-frm fieldset {
+	display: flex;
+}
+
+#<?= $plugin ?>-frm input[type="file"] {
+	flex-grow: 1;
+}
 </style>
 <div class="action-bar">
 	<h2>Importation sauvegarde Eklablog</h2>
@@ -211,17 +218,19 @@ if(!class_exists('ZipArchive')) {
 <div class="in-action-bar">
 	<a href="https://lalutiniere.eklablog.com/" target="_blank">La Lutinière</a>
 </div>
-<div class="<?= $plugin ?>-infos">
-	<p>Taille maxi du fichier : <span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
-	<p>Dossier pour téléverser : <span><?= sys_get_temp_dir() ?></span></p>
+<div class="<?= $plugin ?>-container">
+	<div class="<?= $plugin ?>-infos">
+		<p>Taille maxi du fichier : <span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
+		<p>Dossier pour téléverser : <span><?= sys_get_temp_dir() ?></span></p>
+	</div>
+	<form id="<?= $plugin ?>-frm" method="post" enctype="multipart/form-data">
+		<?= plxToken::getTokenPostMethod() ?>
+		<fieldset>
+			<input type="hidden" name="MAX_FILE_SIZE" value="<?= $maxFileSize ?>" />
+			<input name="archive" type="file" accept="application/zip, text/xml" placeholder="Sélectionner la sauvegarde Eklablog" required>
+			<input type="submit">
+		</fieldset>
+	</form>
 </div>
-<form method="post" enctype="multipart/form-data">
-	<?= plxToken::getTokenPostMethod() ?>
-	<input type="hidden" name="MAX_FILE_SIZE" value="<?= $maxFileSize ?>" />
-	<input name="archive" type="file" accept="application/zip, text/xml" placeholder="Sélectionner la sauvegarde Eklablog" required>
-	<input type="submit">
-</form>
 <?php
 }
-
-// include 'foot.php';
