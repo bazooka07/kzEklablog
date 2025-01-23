@@ -20,7 +20,7 @@ function getTemplates($dir, $pattern) {
 	foreach($files as $v) {
 		$aTemplates[basename($v)] = basename($v, '.php');
 	}
-	sort($aTemplates);
+	asort($aTemplates);
 	return $aTemplates;
 }
 
@@ -68,14 +68,16 @@ if(!empty($_FILES['archive'])) {
 			}
 
 			$template = htmlspecialchars($_POST['template-' . $p]);
-			if(!preg_match('#^article\b.*\.php$#')) {
+			if(!preg_match('#^article\b.*\.php$#', $template)) {
 				$template = 'article.php';
 			}
+
+			$isPage = ($p == 'page');
 
 			# Categories de PluXml
 			$cats = array();
 
-			foreach($eklablog->xpath($p . 's/' . $p '/tags') as $tags) {
+			foreach($eklablog->xpath($p . 's/' . $p . '/tags') as $tags) {
 				foreach(explode(',', $tags) as $part) {
 					/*
 					 * tags spéciaux :
@@ -104,7 +106,7 @@ if(!empty($_FILES['archive'])) {
 			}
 
 			# pages de Eklablog
-			if($p == 'page') {
+			if($isPage) {
 				$name = 'Ek_pages';
 				if(!in_array($name, $plx_cats)) {
 					# Nouvelle catégorie
@@ -124,15 +126,26 @@ if(!empty($_FILES['archive'])) {
 					return $value['name'];
 				}, $plxAdmin->aCats);
 
-				$pattern = '#(?:' . str_replace(',', '|', preg_replace('#\d::#', 'Ek_', $post->tags)) . ')#i';
-				$aCats = array_filter($plxAdmin->aCats, function($value) use($pattern) {
-					return preg_match($pattern, $value['name']);
-				});
-				if(!empty($aCats)) {
-					$aCats = array_keys($aCats);
+				$ek_tags =trim($post->tags);
+				if($isPage) {
+					if(empty('Ek_pages')) {
+						$ek_tags = 'Ek_pages';
+					} else {
+						$ek_tags .= ',' . 'Ek_pages';
+					}
+				}
+				if(!empty($ek_tags)) {
+					$pattern = '#(?:' . str_replace(',', '|', preg_replace('#\d::#', 'Ek_', $ek_tags)) . ')#i';
+					$aCats = array_filter($plxAdmin->aCats, function($value) use($pattern) {
+						return preg_match($pattern, $value['name']);
+					});
+					if(!empty($aCats)) {
+						$aCats = array_keys($aCats);
+						sort($aCats);
+					}
 				}
 
-				// status : 1 brouillon - 2 publié
+				// status : 1 brouillon - 2 publié - 3 modéré ? - 4 programmé
 				$draft = (intval($post->status) == 1);
 				if($draft) {
 					# Voir article.php
@@ -142,22 +155,8 @@ if(!empty($_FILES['archive'])) {
 					array_unshift($aCats, 'draft');
 				}
 
-				$patterns = array(
-					# Suppression lignes vides
-					'#^\s*[\r\n]+#m' => '',
-					# suppression des attributs style
-					'#\s*style="[^"]*"#' => '',
-					# Reformatage <div> de plusieurs lignes
-					'#^\s*<div[\s\r\n]+(\w[^>]+)[\s\r\n]*>#mi'	=> '<div \1>',
-					# Suppression image quote au format svg
-					'#\s*<svg\s+class="ob-quote-\w+"[^>]*>.*?</svg>#si' => '',
-					# suppression espaces début ligne
-					'#^\s+#m'	=> '',
-					# double <div> sur une ligne
-					'#</div>\s+<div#'	=> "</div>\n<div",
-				);
 				# $content = html_entity_decode($post->content);
-				$content = preg_replace(array_keys($patterns), array_values($patterns), html_entity_decode($post->content));
+				$content = preg_replace(array_keys(kzEklablog::CLEANUP_HTML), array_values(kzEklablog::CLEANUP_HTML), html_entity_decode($post->content));
 
 				# Pour récupeerer les urls des images :
 				# preg_match_all('#<img\ssrc="([^"]+)"#', $content, $matches);
@@ -169,7 +168,7 @@ if(!empty($_FILES['archive'])) {
 					'catId'					=> !empty($aCats) ? $aCats : '', # $aCats est un tableau. Peut-être vide
 					'tags'					=> '',
 					'author'				=> '001',
-					'allow_com'				=> '0',
+					'allow_com'				=> $isPage ? '0' : '1',
 					'template'				=> $template,
 
 					'meta_description'		=> '',
@@ -203,7 +202,7 @@ if(!empty($_FILES['archive'])) {
 					break;
 				};
 
-				if(false and $p == 'post' and !empty($_POST['import-comments'])) {
+				if(false and !$isPage and !empty($_POST['import-comments'])) {
 					# Import des commentaires
 					/*
 <comment>
@@ -217,7 +216,7 @@ if(!empty($_FILES['archive'])) {
 	<replies/>
 </comment>
 					 * */
-					foreach($post->xpath('comments/comment' as $comment)) {
+					foreach($post->xpath('comments/comment') as $comment) {
 
 					}
 				}
