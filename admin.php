@@ -202,23 +202,11 @@ if(!empty($_FILES['archive'])) {
 					break;
 				};
 
-				if(false and !$isPage and !empty($_POST['import-comments'])) {
+				if(!$isPage and !empty($_POST['import-comments'])) {
 					# Import des commentaires
-					/*
-<comment>
-	<published_at>2025-01-19T01:04:07+01:00</published_at>
-	<status>1</status>
-	<author_name>Toto</author_name>
-	<author_email/>
-	<author_url/>
-	<author_ip/>
-	<content>Le beau Danuble bleu</content>
-	<replies/>
-</comment>
-					 * */
-					foreach($post->xpath('comments/comment') as $comment) {
 
-					}
+					# Recursive function
+					$plxPlugin->addComment($post->xpath('comments/comment'));
 				}
 
 				$artId = str_pad(intval($artId) + 1, 4, '0', STR_PAD_LEFT);
