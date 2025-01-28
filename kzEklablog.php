@@ -4,6 +4,13 @@ if(!defined('PLX_ROOT')) {
 }
 
 class kzEklablog extends plxPlugin {
+	const TEMPLATE_PATTERN = '#^article(?:-[\w-]+)?\.php$#';
+	const FILTER_OPTIONS_INT = array(
+		'default' => 0,
+		'min_range' => 0,
+		'max_range' => 1
+	);
+	const CHECKBOXES = array('post', 'page', 'comments', 'images');
 	const DATES_DICT = array(
 		'date_creation'	=> 'created_at',
 		'date_update'	=> 'modified_at',
@@ -14,20 +21,56 @@ class kzEklablog extends plxPlugin {
 		'#^\s*[\r\n]+#m' => '',
 		# suppression des attributs style
 		'#\s*style="[^"]*"#' => '',
+		# Suppression du javascript
+		'#\s*<script\b.*?</script>#si' => '',
 		# Reformatage <div> de plusieurs lignes
 		'#^\s*<div[\s\r\n]+(\w[^>]+)[\s\r\n]*>#mi'	=> '<div \1>',
 		# Suppression image quote au format svg
 		'#\s*<svg\s+class="ob-quote-\w+"[^>]*>.*?</svg>#si' => '',
 		# suppression espaces début ligne
 		'#^\s+#m'	=> '',
-		# double <div> sur une ligne
-		'#</div>\s+<div#'	=> "</div>\n<div",
+		# double <div> ou <p> sur une ligne
+		'#</(div|p)>\s*<\1#'	=> '</$1>' . PHP_EOL . '<$1',
+		#
+		'#[\r\n]+\s*<#m'			=> '<',
 	);
+	const PATTERN_MEDIA = '#"https?://[\w\.-]+/[^"]*image([^"]+)"#';
 
 	public function __construct($default_lang) {
 		parent::__construct($default_lang);
 		$this->setAdminProfil(PROFIL_ADMIN);
 		$this->setAdminMenu('Eklablog', false, 'Importation des données du blog');
+
+		if(!defined('PLX_ADMIN')) {
+			$hook = 'ThemeEndBody';
+			$this->addHook($hook, $hook);
+		}
+	}
+
+	public function getTemplates($dir, $pattern) {
+		# On récupère les templates des articles
+		$files = glob($dir . 'article*.php');
+		if (empty($files)) {
+			return array('' => L_NONE1);
+		}
+
+		$aTemplates = array('' => '...');
+		foreach($files as $v) {
+			$aTemplates[basename($v)] = basename($v, '.php');
+		}
+		asort($aTemplates);
+		return $aTemplates;
+	}
+
+	public function printCheckbox($name) {
+		$fieldname = 'import-' . $name;
+		$checked = !empty($this->getParam($fieldname)) ? 'checked' : '';
+?>
+				<label>
+					<input type="checkbox" name="<?= $fieldname ?>" value="1" <?= $checked ?>>
+					<span><?= $this->getLang(strtoupper($fieldname)) ?></span>
+				</label>
+<?php
 	}
 
 /*
@@ -106,4 +149,11 @@ class kzEklablog extends plxPlugin {
 
 	}
 
+	/* ========= hooks ========== */
+
+	public function ThemeEndBody() {
+?>
+<script src="<?= PLX_PLUGINS . __CLASS__ . '/' . __CLASS__ ?>.js"></script>
+<?php
+	}
 }

@@ -1,0 +1,57 @@
+.kzEklablog-container {
+	max-width: 64rem;
+}
+
+.kzEklablog-infos {
+	border: 1px solid #333;
+	padding: 0 1rem;
+	margin-bottom: 0.5rem;
+	border-radius: 1rem;
+}
+
+.kzEklablog-infos span:first-of-type {
+	display: inline-block;
+	width: 45%;
+}
+
+.kzEklablog-infos span:last-of-type {
+	background-color: #eee;
+	padding: 0.25rem 1rem;
+}
+
+#kzEklablog-frm p {
+	margin: 0.25rem 0.5rem;
+}
+
+#kzEklablog-frm fieldset {
+	padding: 0.25rem 1.25rem;
+	border: 1px solid #333;
+	border-radius: 1rem;
+}
+
+#kzEklablog-frm fieldset:first-of-type > p:not(last-of-type) {
+	display: grid;
+	grid-template-columns: 16rem 1fr
+}
+
+#kzEklablog-frm fieldset:not(:last-of-type) {
+	margin-bottom: 1rem;
+}
+
+#kzEklablog-frm fieldset:last-of-type {
+	display: flex;
+}
+
+#kzEklablog-frm fieldset legend {
+	margin: 0;
+	padding: 0 1rem;
+}
+
+#kzEklablog-frm label {
+	display: inline-block;
+	white-space: nowrap;
+}
+
+#kzEklablog-frm input[type="file"] {
+	flex-grow: 1;
+}
