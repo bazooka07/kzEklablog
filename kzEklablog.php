@@ -10,17 +10,18 @@ class kzEklablog extends plxPlugin {
 		'min_range' => 0,
 		'max_range' => 1
 	);
-	const CHECKBOXES = array('post', 'page', 'comments', 'images');
+	const CHECKBOXES = array('post', 'page', 'comments', 'images', 'delete_all_before');
 	const DATES_DICT = array(
 		'date_creation'	=> 'created_at',
 		'date_update'	=> 'modified_at',
 		'date_publication'	=> 'published_at',
 	);
+	const EMPTY_CONTENT = '#^<div\b[^>]*>\s*<div\b[^>]*>\s*</div>\s*</div>$#';
 	const CLEANUP_HTML = array(
 		# Suppression lignes vides
 		'#^\s*[\r\n]+#m' => '',
 		# suppression des attributs style
-		'#\s*style="[^"]*"#' => '',
+		# '#\s*style="[^"]*"#' => '',
 		# Suppression du javascript
 		'#\s*<script\b.*?</script>#si' => '',
 		# Reformatage <div> de plusieurs lignes
@@ -28,13 +29,50 @@ class kzEklablog extends plxPlugin {
 		# Suppression image quote au format svg
 		'#\s*<svg\s+class="ob-quote-\w+"[^>]*>.*?</svg>#si' => '',
 		# suppression espaces début ligne
-		'#^\s+#m'	=> '',
+		'#^\s+#m'=> '',
 		# double <div> ou <p> sur une ligne
-		'#</(div|p)>\s*<\1#'	=> '</$1>' . PHP_EOL . '<$1',
+		'#</(div|p)>\s*<\1#' => '</$1>' . PHP_EOL . '<$1',
 		#
-		'#[\r\n]+\s*<#m'			=> '<',
+		'#[\r\n]+\s*<#m' => '<',
 	);
 	const PATTERN_MEDIA = '#"https?://[\w\.-]+/[^"]*image([^"]+)"#';
+	const PATTERN_IMG = '#<img\b([^>]*)\ssrc="(https?://[^/]+/([^"]*))"#'; # 3 groupes
+	/*
+	 * sites :
+	 * cdn.pflanzmich.de
+	 * ddata.over-blog.com
+	 * ekladata.com
+	 * fdata.over-blog.com
+	 * i0.wp.com
+	 * idata.over-blog.com
+	 * image.eklablog.com
+	 * img.over-blog.com
+	 * indexgrafik.fr
+	 * lh5.googleusercontent.com
+	 * logos-marques.com
+	 * media.composition.gallery
+	 * media.istockphoto.com
+	 * nsm01.casimages.com
+	 * nsm02.casimages.com
+	 * static.fnac-static.com
+	 * static.xx.fbcdn.net
+	 * tse3.mm.bing.net
+	 * upload.wikimedia.org
+	 * www.bedetheque.com
+	 * www.bhg.com
+	 * www.goodplanet.info
+	 * www.hayadan.org.il
+	 * www.keblog.it
+	 * www.laviedessaints.com
+	 * www.playingforchange.com
+	 * www.pourpenser.fr
+	 * www.quizexpo.com
+	 * www.thebookedition.com
+
+	 * https://tse3.mm.bing.net/th?id=OIP.UdQBpAeVYDlSSmaK7-7KswAAAA&pid=Api
+	 * https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Ghanaian_kid_playing_Blind_Fold_game_often_referred_to_as_%22Jack_Where_are_you%3F%22_with_friends._The_blind_folded_kid_moves_around_hoping_to_catch_any_of_his_friends_but_his_friends_run_around_to_avert_his_grips_04.jpg/800px-thumbnail.jpg
+	 * */
+	const EK_TAGS = array('title', 'slug', 'status', 'content', 'origin', 'created_at', 'published_at', 'modified_at', /* 'author', */ );
 
 	public function __construct($default_lang) {
 		parent::__construct($default_lang);

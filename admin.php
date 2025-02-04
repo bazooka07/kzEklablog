@@ -1,6 +1,14 @@
 <?php
 /*
- * https://overblog.uservoice.com/knowledgebase/articles/1852513-r%C3%A9diger-une-page
+ * https://overblog.uservoice.com/knowledgebase/articles/1852513-r%C3%A9diger-une-
+ *
+ * status = 1 : brouillon
+ * status = 2 : publié
+ * status = 3 : modéré ?
+ * status = 4 : publication différée ( programmée )
+ * status = 5 : ????
+ * status = 6 : ????
+ * status = 7 : article protégé par mot de passe
  * */
 
 # Control du token du formulaire
@@ -42,291 +50,114 @@ if(!empty($_FILES['archive'])) {
 	}
 
 	if(!empty($eklablog)) {
-		// $eklablog->blog
-		$artId = ''; # parametre par référence pour plxAdmin::editArticle
-
-		foreach(kzEklablog::CHECKBOXES as $k) {
-			$fieldname = 'import-' . $k;
-			$v = filter_input(INPUT_POST, $fieldname, FILTER_VALIDATE_INT, kzEklablog::FILTER_OPTIONS_INT);
-			$plxPlugin->setParam($fieldname, $v, 'numeric');
+		$hostname = filter_input(INPUT_POST, 'hostname', FILTER_SANITIZE_URL);
+		if(is_string($hostname)) {
+			$plxPlugin->setParam('hostname', $hostname, 'string');
 		}
 
-		foreach(array('post', 'page',) as $p) {
-			$chk = 'import-' . $p;
-			if(empty($_POST[$chk]) or $_POST[$chk] != '1') {
-				continue;
-			}
-
-			$template = htmlspecialchars($_POST['template-' . $p]);
-			if(!array_key_exists($template, $aArticleTemplates)) {
-				$template = array_keys($template)[0];
-			}
-			$plxPlugin->setParam('template-' . $p, $template, 'string');
-
-			$isPage = ($p == 'page');
-
-			# Categories de PluXml
-			$cats = array();
-			if(!empty($defaultCat)) {
-				$cats[] = $defaultCat;
-			}
-
-
-			foreach($eklablog->xpath($p . 's/' . $p . '/tags') as $tags) {
-				foreach(explode(',', $tags) as $part) {
-					/*
-					 * tags spéciaux :
-					 *
-					 * 2::pinned
-					 * 2::carousel
-					 * */
-					$cats[] = preg_replace('#^\d::#', 'Ek_', $part);
-				}
-			}
-			sort($cats);
-			$cats = array_unique($cats);
-			$plx_cats = array_map(function($value) {
-				return $value['name'];
-			}, $plxAdmin->aCats);
-			foreach($cats as $k) {
-				if(!in_array($k, $plx_cats)) {
-					# Nouvelle catégorie
-					$plxAdmin->editCategories(array(
-						'new_category'	=> '1',
-						'new_catname'	=> ucfirst(strtolower($k)),
-					));
-					# On recharge la nouvelle liste
-					$plxAdmin->getCategories(path('XMLFILE_CATEGORIES'));
-				}
-			}
-
-			# catégories Ek_posts et Ek_pages de Eklablog
-			$name = 'Ek_' . $p . 's';
-			if(!in_array($name, $plx_cats)) {
-				# Nouvelle catégorie
-				$plxAdmin->editCategories(array(
-					'new_category'	=> '1',
-					'new_catname'	=> $name,
-				));
-				# On recharge la nouvelle liste
-				$plxAdmin->getCategories(path('XMLFILE_CATEGORIES'));
-			}
-
-			# On parcourt les posts et pages du blog Eklablog
-			foreach($eklablog->xpath($p . 's/' . $p) as $post) {
-				# On recharge les catégories
-				$plx_cats = array_map(function($value) {
-					return $value['name'];
-				}, $plxAdmin->aCats);
-
-				$ek_tags =trim($post->tags);
-				$name = 'Ek_' . $p . 's';
-				if(empty($ek_tags)) {
-					$ek_tags = $name;
-				} else {
-					$ek_tags .= ',' . $name;
-				}
-
-				$pattern = '#(?:' . str_replace(',', '|', preg_replace('#\d::#', 'Ek_', $ek_tags)) . ')#i';
-				$aCats = array_filter($plxAdmin->aCats, function($value) use($pattern) {
-					return preg_match($pattern, $value['name']);
-				});
-				if(!empty($aCats)) {
-					$aCats = array_keys($aCats);
-					sort($aCats);
-				}
-
-				// status : 1 brouillon - 2 publié - 3 modéré ? - 4 programmé
-				$draft = (intval($post->status) == 1);
-				if($draft) {
-					# Voir article.php
-					if(empty($aCats)) {
-						$aCats[] = '000';
-					}
-					array_unshift($aCats, 'draft');
-				}
-
-				# $content = html_entity_decode($post->content);
-				$content = preg_replace(array_keys(kzEklablog::CLEANUP_HTML), array_values(kzEklablog::CLEANUP_HTML), html_entity_decode($post->content));
-
-				$images = array();
-				$chkImg = 'import-images';
-				if(!empty($_POST[$chkImg]) and $_POST[$chkImg] == '1') {
-					# Pour récupérer les urls des images :
-					$root = $plxAdmin->aConf['medias'];
-					$content = preg_replace_callback(
-						$plxPlugin::PATTERN_MEDIA,
-						function($matches) use(&$images, $root) {
-							$target = $root . ltrim(urldecode($matches[1]), '/');
-							$images[$target] = trim($matches[0], '"');
-							return '"' . $target . '"';
-						},
-						$content
-					);
-				}
-
-				$article = array(
-					'artId'					=> $artId,
-					'title'					=> trim($post->title), # cast String
-					'chapo'					=> '',
-					'content'				=> $content,
-					'catId'					=> !empty($aCats) ? $aCats : '', # $aCats est un tableau. Peut-être vide
-					'tags'					=> '',
-					'author'				=> '001',
-					'allow_com'				=> $isPage ? '0' : '1',
-					'template'				=> $template,
-
-					'meta_description'		=> '',
-					'meta_keywords'			=> '',
-					'title_htmltag'			=> '',
-
-					'thumbnail'				=> '',
-					'thumbnail_alt'			=> '',
-					'thumbnail_title'		=> '',
-
-					'date_update_old'		=> '',
-				);
-
-				// $article['moderate'] = 'ok';
-				if($draft) {
-					$article[($draft ? 'draft' : 'publish')] = 'ok';
-				}
-
-				foreach(kzEklablog::DATES_DICT as $k=>$v) {
-					if(preg_match('#^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}).*#', $post->$v, $matches)) {
-						 // 2025-01-18T23:00:12+01:00
-						$article[$k . '_year'] = $matches[1];
-						$article[$k . '_month'] = $matches[2];
-						$article[$k . '_day'] = $matches[3];
-						$article[$k . '_time'] = $matches[4];
-					}
-				}
-
-				if(!$plxAdmin->editArticle($article, $artId)) {
-					plxMsg::Error('Article non enregistré : ' . $article['title']);
-					break;
-				};
-
-				if(!$isPage and !empty($_POST['import-comments'])) {
-					# Import des commentaires
-
-					# Recursive function
-					$plxPlugin->addComment($post->xpath('comments/comment'));
-				}
-
-				if(!empty($images)) {
-					# On rapatrie les images
-					foreach($images as $target=>$url) {
-						$path = PLX_ROOT . $plxAdmin->aConf['racine_medias'] . pathinfo($target, PATHINFO_DIRNAME);
-						if(!is_dir($path)) {
-							mkdir($path, 0775, true);
-						}
-						$ch = curl_init($url);
-						curl_setopt_array($ch, array(
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_FOLLOWLOCATION => true,
-						));
-						$img = curl_exec($ch);
-						if($img === false or file_put_contents(PLX_ROOT . $target, $img) === false) {
-							plxMsg::Error($this->getLang('DENIED_IMAGE_STORAGE'));
-						}
-						unset($img);
-						curl_close($ch);
-
-					}
-				}
-
-				$artId = str_pad(intval($artId) + 1, 4, '0', STR_PAD_LEFT);
-			}
+		if(isset($_POST['table']) and in_array($_POST['table'], array('post', 'page'))) {
+			include 'inc/table.php';
+		} else {
+			include 'inc/import.php';
 		}
-		$plxPlugin->saveParams();
-
-		plxMsg::Info('Importation terminée');
 	} else {
 		plxMsg::Error('Erreur inconnue');
 	}
-	header('Location: index.php');
-	exit;
-}
+} else {
 ?>
 <div class="action-bar">
 	<h2>Importation sauvegarde Eklablog</h2>
 </div>
 <?php
-if(!class_exists('ZipArchive')) {
-	plxMsg::Error('Librairie Zip manquante');
-} elseif(!function_exists('simplexml_load_file')) {
-	plxMsg::Error('Librairie XML manquante');
-} else {
-	$maxFileSize = ini_get('upload_max_filesize');
-	if(preg_match('#^(\d+)M$#', $maxFileSize, $matches)) {
-		$maxFileSize = intval($matches[1]) * 1024 * 1024;
-	} elseif(preg_match('#^(\d+)K$#', $maxFileSize, $matches)) {
-		$maxFileSize = intval($matches[1]) * 1024;
-	}
+	if(!class_exists('ZipArchive')) {
+		plxMsg::Error('Librairie Zip manquante');
+	} elseif(!function_exists('simplexml_load_file')) {
+		plxMsg::Error('Librairie XML manquante');
+	} else {
+		$maxFileSize = ini_get('upload_max_filesize');
+		if(preg_match('#^(\d+)M$#', $maxFileSize, $matches)) {
+			$maxFileSize = intval($matches[1]) * 1024 * 1024;
+		} elseif(preg_match('#^(\d+)K$#', $maxFileSize, $matches)) {
+			$maxFileSize = intval($matches[1]) * 1024;
+		}
 ?>
 <div class="in-action-bar">
 	<a href="https://lalutiniere.eklablog.com/" target="_blank">La Lutinière</a>
 </div>
+
 <div class="<?= $plugin ?>-container">
 	<div class="<?= $plugin ?>-infos">
-		<p><span><?= $plxPlugin->getLang('UPLOAD_MAX_FILESIZE') ?></span><span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
-		<p><span><?= $plxPlugin->getLang('UPLOAD_FOLDER') ?></span><span><?= sys_get_temp_dir() ?></span></p>
+		<p><span title="POST_MAX_SIZE"><?= $plxPlugin->getLang('POST_MAX_SIZE') ?></span><span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('post_max_size')) ?></span></p>
+		<p><span title="UPLOAD_MAX_FILESIZE"><?= $plxPlugin->getLang('UPLOAD_MAX_FILESIZE') ?></span><span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
+		<p><span title="UPLOAD_FOLDER"><?= $plxPlugin->getLang('UPLOAD_FOLDER') ?></span><span><?= sys_get_temp_dir() ?></span></p>
 	</div>
 	<form id="<?= $plugin ?>-frm" method="post" enctype="multipart/form-data">
 		<?= plxToken::getTokenPostMethod() ?>
 		<fieldset>
 			<legend>Importer :</legend>
 <?php
-foreach(kzEklablog::CHECKBOXES as $k=>$f) {
+		foreach(kzEklablog::CHECKBOXES as $k=>$f) {
 ?>
 			<p>
 <?php
-$plxPlugin->printCheckbox($f);
+		$plxPlugin->printCheckbox($f);
 
-	if($k < 2) {
+			if($k < 2) {
 ?>
 				<label>
 					<span>Template</span>
 					<?php plxUtils::printSelect('template-' . $f, $aArticleTemplates, $plxPlugin->getParam('template-' . $f)); ?>
 				</label>
 <?php
-	}
+			}
 ?>
 			</p>
 <?php
-}
+		}
 ?>
+			<p>
+				<label>
+					<span><?= $plxPlugin->getLang('HOSTNAME') ?></span>
+					<input type="url" name="hostname" value="<?= $plxPlugin->getParam('hostname') ?>">
+				</label>
+			</p>
 		</fieldset>
 		<fieldset>
 			<input type="hidden" name="MAX_FILE_SIZE" value="<?= $maxFileSize ?>" />
 			<input name="archive" type="file" accept="application/zip, text/xml" placeholder="Sélectionner la sauvegarde Eklablog" required>
 			<input type="submit">
+			<span>&nbsp;</span>
+			<input type="submit" name="table" value="post" title="<?= $plxPlugin->getLang('VIEW_IN_TABLE') ?>">
+			<span>&nbsp;</span>
+			<input type="submit" name="table" value="page" title="<?= $plxPlugin->getLang('VIEW_IN_TABLE') ?>">
 		</fieldset>
 	</form>
 <?php
-$plugins = array_filter(
-	$plxAdmin->plxPlugins->aPlugins,
-	function($name) use($plugin) {
-		return $name != $plugin;
-	},
-	ARRAY_FILTER_USE_KEY
-);
-if(!empty($plugins)) {
+		$plugins = array_filter(
+			$plxAdmin->plxPlugins->aPlugins,
+			function($name) use($plugin) {
+				return $name != $plugin;
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+		if(!empty($plugins)) {
 ?>
 	<h3><?php $plxPlugin->lang('ACTIVE_PLUGINS'); ?> :</h3>
 	<ul>
 <?php
-	foreach($plugins as $name=>$plxPlugin) {
+			foreach($plugins as $name=>$plxPlugin) {
 ?>
 		<li><?= $name ?> - version: <?= $plxPlugin->getInfo('version') ?> ( <em><?= $plxPlugin->getInfo('date') ?></em> )</li>
 <?php
-	}
+			}
 ?>
 	</ul>
 <?php
-}
+		}
 ?>
 </div>
+
+<span id="spin-loader" class="loader"></span>
 <?php
+	}
 }

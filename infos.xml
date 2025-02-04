@@ -2,9 +2,9 @@
 <document>
 	<title>kzEklablog</title>
 	<author>Bazooka07</author>
-	<version>0.3.0</version>
-	<date>28/01/2025</date>
+	<version>0.4.0</version>
+	<date>04/02/2025</date>
 	<site>https://kazimentou.fr/repo/</site>
-	<description>Importation des données depuis la sauvegarde d'un blog Eklablog - ( https://github.com/bazooka07/kzEklablog )</description>
+	<description>Importation des données depuis la sauvegarde d'un blog Eklablog</description>
 	<scope></scope>
 </document>
