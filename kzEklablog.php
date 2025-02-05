@@ -72,7 +72,7 @@ class kzEklablog extends plxPlugin {
 	 * https://tse3.mm.bing.net/th?id=OIP.UdQBpAeVYDlSSmaK7-7KswAAAA&pid=Api
 	 * https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Ghanaian_kid_playing_Blind_Fold_game_often_referred_to_as_%22Jack_Where_are_you%3F%22_with_friends._The_blind_folded_kid_moves_around_hoping_to_catch_any_of_his_friends_but_his_friends_run_around_to_avert_his_grips_04.jpg/800px-thumbnail.jpg
 	 * */
-	const EK_TAGS = array('title', 'slug', 'status', 'content', 'origin', 'created_at', 'published_at', 'modified_at', /* 'author', */ );
+	const EK_TAGS = array('title', 'slug', 'status', 'tags', 'content', 'origin', 'created_at', 'published_at', 'modified_at', /* 'author', */ );
 
 	public function __construct($default_lang) {
 		parent::__construct($default_lang);

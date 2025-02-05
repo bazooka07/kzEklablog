@@ -20,6 +20,7 @@
 				foreach(array('racine_articles', 'racine_commentaires',) as $k) {
 					array_map('unlink', glob(PLX_ROOT . $plxAdmin->aConf[$k] . '*.xml'));
 				}
+				$artId = '0001';
 			}
 
 			foreach(array('post', 'page',) as $p) {
