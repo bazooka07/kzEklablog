@@ -88,6 +88,29 @@
 
 /* --- spin loader --- */
 
+#spin-container {
+	position: fixed;
+	top: 50vh;
+	left: 50vw;
+	height: 20rem;
+	width: 33vw;
+	min-width: 200px;
+	padding: 0.5rem;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #ccc;
+	cursor: pointer;
+	transition: .2s linear;
+	background: #ccc;
+	transform: translate(-50%, -50%);
+}
+
+#spin-container:not(.active) {
+	display: none;
+}
+
 .loader, .loader:before, .loader:after {
   border-radius: 50%;
   width: 2.5em;
@@ -120,9 +143,5 @@
 @keyframes bblFadInOut {
   0%, 80%, 100% { box-shadow: 0 2.5em 0 -1.3em }
   40% { box-shadow: 0 2.5em 0 0 }
-}
-
-#spin-loader:not(.active) {
-	display: none;
 }
 

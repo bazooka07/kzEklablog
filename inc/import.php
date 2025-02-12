@@ -23,6 +23,7 @@
 				$artId = '0001';
 			}
 
+			$imgListing =  array();
 			foreach(array('post', 'page',) as $p) {
 				$chk = 'import-' . $p;
 				if(empty($_POST[$chk]) or $_POST[$chk] != '1') {
@@ -39,9 +40,11 @@
 
 				# Categories de PluXml
 				$cats = array();
+				/*
 				if(!empty($defaultCat)) {
 					$cats[] = $defaultCat;
 				}
+				*/
 
 				foreach($eklablog->xpath($p . 's/' . $p . '/tags') as $tags) {
 					$parts = array_map('trim', explode(',', $tags));
@@ -136,6 +139,8 @@
 
 					$content = preg_replace(array_keys(kzEklablog::CLEANUP_HTML), array_values(kzEklablog::CLEANUP_HTML), html_entity_decode($post->content));
 
+					/* === Gestion des images === */
+
 					$images = array();
 					$chkImg = 'import-images';
 					if(!empty($_POST[$chkImg]) and $_POST[$chkImg] == '1') {
@@ -151,18 +156,24 @@
 								 * https://image.eklablog.com/tAQGyWSeHaT1dI_4HxYtCH8xMEM=/filters:no_upscale()/image%2F0651865%2F20250126%2Fob_349548_hiver.jpg
 								 * https://cdn.pflanzmich.de/produkt/37889/Rosa-corymbifera2_origin_img.jpg?progressive=1
 								 * */
-								# $matches[3] : $matches[2] without hostname
-								$pathname = parse_url($matches[2], PHP_URL_PATH);
-								if(preg_match('#^.*/image(.*)$#', $pathname, $groups)) {
-									$pathname = urldecode($groups[1]);
+								$parts = parse_url($matches[2]);
+								if(preg_match('#filters:[^/]*/(.*)$#', $parts['path'], $groups)) {
+									$parts['path'] = urldecode($groups[1]);
 								}
-								$pathname = ltrim($pathname, '/');
+
+								$pathname = preg_match('#\bekladata.com$#', $parts['host']) ? ltrim($parts['path'], '/') : $parts['host'] . $parts['path'];
 								$target = $mediasRoot . $pathname;
 								$images[$target] = $matches[2];
 								return '<img' . $matches[1] .' src="' . $target . '"';
 							},
 							$content
 						);
+
+						if(!empty($images)) {
+							foreach($images as $target=>$url) {
+								$imgListing[] = $target . "\t" . $url;
+							}
+						}
 					}
 
 					$url = str_replace('/', '_', preg_replace('#\.html?$#', '', trim($post->slug)));
@@ -232,42 +243,30 @@
 						$plxPlugin->addComment($post->xpath('comments/comment'));
 					}
 
-					if(!empty($images)) {
-						# On rapatrie les images
-						foreach($images as $target=>$url) {
-							$filename = PLX_ROOT . $target;
-							if(file_exists($filename)) {
-								# L'image existe déjà
-								continue;
-							}
+					/* === Importation immédiate des images === */
 
-							$path = PLX_ROOT . $plxAdmin->aConf['medias'] . pathinfo($target, PATHINFO_DIRNAME);
-							if(!is_dir($path)) {
-								mkdir($path, 0775, true);
-							}
-							$ch = curl_init($url);
-							curl_setopt_array($ch, array(
-								CURLOPT_RETURNTRANSFER => true,
-								CURLOPT_FOLLOWLOCATION => true,
-							));
-							$img = curl_exec($ch);
-							error_log($target . ' : ' . $url . PHP_EOL, 3, $log_file);
-							if($img === false or file_put_contents($filename, $img) === false) {
-								$msg = $plxPlugin->getLang('DENIED_IMAGE_STORAGE');
-								plxMsg::Error($msg);
-								error_log($msg . PHP_EOL, 3, $log_file);
-							}
-							unset($img);
-							curl_close($ch);
-
-						}
+					$chkDirectImg = 'import-direct_images';
+					if(!empty($images) and !empty($_POST[$chkDirectImg]) and $_POST[$chkDirectImg] == '1') {
+						include 'import-medias.php';
 					}
 
 					$artId = str_pad(intval($artId) + 1, 4, '0', STR_PAD_LEFT);
 				}
+			} // End of : foreach(array('post', 'page',) as $p)
+
+			if(!empty($imgListing)) {
+				# Listing de toutes les images du site à importer
+				usort($imgListing, function($a, $b) {
+					$ta = explode("\t", $a);
+					$tb = explode("\t", $b);
+					return strcmp($ta[0], $tb[0]);
+				});
+				file_put_contents(realpath(PLX_ROOT . PLX_CONFIG_PATH . 'plugins') . '/' . $plugin . '-img.lst', implode(PHP_EOL, array_unique($imgListing)) . PHP_EOL);
 			}
+
 			$plxPlugin->saveParams();
 
 			plxMsg::Info('Importation terminée');
+			$_SESSION[$plugin] = $plxPlugin->getParam('hostname');
 			header('Location: index.php');
 			exit;
