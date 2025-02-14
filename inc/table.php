@@ -60,7 +60,7 @@
 		</tbody>
 	</table>
 </div>
-<div class="in-action-bar <?= $plugin ?>">
-	<span><strong><?= $p ?></strong></span> <a class="button" href="plugin.php?p=<?= $plugin ?>"><?= $plxPlugin->getLang('BACK') ?></a>
+<div class="in-action-bar <?= $plugin ?> preview">
+	<span class="preview"><strong><?= $p ?></strong></span> <a class="button" href="plugin.php?p=<?= $plugin ?>"><?= $plxPlugin->getLang('BACK') ?></a>
 </div>
 <?php

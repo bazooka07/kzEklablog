@@ -33,13 +33,7 @@ $plxAdmin->checkProfil(PROFIL_ADMIN);
 $root = PLX_ROOT . $plxAdmin->aConf['racine_themes'] . $plxAdmin->aConf['style'] . '/' ;
 $aArticleTemplates = $plxPlugin->getTemplates($root, $plxPlugin::TEMPLATE_PATTERN);
 
-if(isset($_POST['update_links']) /* and !empty($_POST['hostname']) */) {
-	# $hostname = filter_input(INPUT_POST, 'hostname', FILTER_VALIDATE_URL);
-	$hostname =$plxPlugin->getParam('hostname');
-	if(!empty($hostname)) {
-		include 'inc/update-links.php';
-	}
-} elseif(!empty($_FILES['archive'])) {
+if(!empty($_FILES['archive'])) {
 	if($_FILES['archive']['error'] != 0) {
 		plxMsg::Error(UPLOAD_ERRORS[$_FILES['archive']['error']]);
 	} else {
@@ -107,13 +101,17 @@ if(isset($_POST['update_links']) /* and !empty($_POST['hostname']) */) {
 		if(preg_match('#^(\d+)(K|M|G)$#', $maxFileSize, $matches)) {
 			$maxFileSize = intval($matches[1]) * $units[strtoupper($matches[2])];
 		}
+	$tempDir = ini_get('upload_tmp_dir');
+	if(empty($tempDir)) {
+		$tempDir = sys_get_temp_dir();
+	}
 ?>
 <div class="<?= $plugin ?>-container">
 	<div class="<?= $plugin ?>-infos">
 		<p><span title="POST_MAX_SIZE"><?= $plxPlugin->getLang('POST_MAX_SIZE') ?></span><span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('post_max_size')) ?></span></p>
 		<p><span title="UPLOAD_MAX_FILESIZE"><?= $plxPlugin->getLang('UPLOAD_MAX_FILESIZE') ?></span><span><?= preg_replace('#^(\d+)(M|G|K)#', '\1 \2o', ini_get('upload_max_filesize')) ?></span></p>
 		<p><span title="MAX_EXECUTION_TIME"><?= $plxPlugin->getLang('MAX_EXECUTION_TIME') ?></span><span><?= ini_get('max_execution_time') ?></span> <?= $plxPlugin->getLang('SECONDS') ?></p>
-		<p><span title="UPLOAD_FOLDER"><?= $plxPlugin->getLang('UPLOAD_FOLDER') ?></span><span><?= ini_get('upload_tmp_dir') ?></span></p>
+		<p><span title="UPLOAD_FOLDER"><?= $plxPlugin->getLang('UPLOAD_FOLDER') ?></span><span><?= $tempDir ?></span></p>
 	</div>
 	<form id="<?= $plugin ?>-frm" method="post" enctype="multipart/form-data">
 		<?= plxToken::getTokenPostMethod() . PHP_EOL ?>

@@ -9,6 +9,8 @@ if(!defined('PLX_ROOT')) {
  * */
 
 class kzEklablog extends plxPlugin {
+	const BEGIN_CODE = '<?php # ' . __CLASS__ . ' plugin' . PHP_EOL;
+	const END_CODE = PHP_EOL . '?>';
 	const TEMPLATE_PATTERN = '#^article(?:-[\w-]+)?\.php$#';
 	const FILTER_OPTIONS_INT = array(
 		'default' => 0,
@@ -52,15 +54,32 @@ class kzEklablog extends plxPlugin {
 	const EK_TAGS = array('title', 'slug', 'status', 'tags', 'content', 'origin', 'created_at', 'published_at', 'modified_at', /* 'author', */ );
 
 	const HEBERGEUR = 'eklablog\.com'; # Employé dans une Regex
+	const MAIN_TAG = '2::main-tag';
+
+	const HOOKS = array(
+		'AdminIndexPrepend',
+		'plxAdminEditCategoriesNew',
+		'AdminIndexTop',
+		'AdminIndexFoot',
+	);
+
+	public $newCats = null;
 
 	public function __construct($default_lang) {
 		parent::__construct($default_lang);
 		$this->setAdminProfil(PROFIL_ADMIN);
-		$this->setAdminMenu('Eklablog', false, 'Importation des données du blog');
 
+		if(defined('PLX_AUTH')) {
+			return;
+		}
+
+		$this->setAdminMenu('Eklablog', false, 'Importation des données du blog');
 		if(defined('PLX_ADMIN')) {
-			$hook= 'AdminIndexPrepend';
-			$this->addHook($hook, $hook);
+			if(isset($_SESSION['profil']) and $_SESSION['profil'] == PROFIL_ADMIN) {
+				foreach(self::HOOKS as $hook) {
+					$this->addHook($hook, $hook);
+				}
+			}
 		} else {
 			$hook = 'ThemeEndBody';
 			$this->addHook($hook, $hook);
@@ -169,19 +188,137 @@ class kzEklablog extends plxPlugin {
 
 	}
 
+	/*
+	 * Limite les urls pour les posts et pages à moins de 64 caractères
+	 *
+	 * */
+	public function shorten_url($url) {
+		if(strlen($url) > 64) {
+			# Shrinking $url
+			$parts = explode('-', $url); # E.G.: tableau-vivant-la-pedagogie-au-service-des-sens-et-du-sens-a216234061
+			$last = array_pop($parts); # ressemble à a112994248
+			$n = strlen($last);
+			$tmp = '';
+			foreach($parts as $p) {
+				if(strlen($tmp) + strlen($p) + 1 > 64) {
+					break;
+				}
+				$tmp .= $p . '-';
+			}
+			return $tmp . $last;
+		}
+
+		return $url;
+	}
+
+	/*
+	 * Pour les main-tag supprime la dernièe partie de l'ur. Peu de risque de doublon comme pour les posts et pages
+	 * */
+	public function shorten_main_tag($url) {
+		return preg_replace('#-[a-z]\d+$#', '', $url);
+	}
+
 	/* ========= hooks ========== */
 
 	public function AdminIndexPrepend() {
 		global $plxAdmin;
 		$hostname = $this->getParam('hostname'); # utilisé dans include
 
-		if(!isset($_SESSION[__CLASS__]) or $_SESSION[__CLASS__] != $hostname) {
-			return;
-		}
+		if(isset($_SESSION[__CLASS__]) and $_SESSION[__CLASS__] == $hostname) {
+			# On met à jour les liens internes dans les articles
+			unset($_SESSION[__CLASS__]);
+			include 'inc/update-links.php';
+		} elseif(isset($_POST[__CLASS__ . '_add'])) {
+			if(empty($_POST['idArt'])) {
+				plxMsg::Error($this->getLang('MISSING_ARTICLE'));
+				return;
+			}
 
-		# On met à jour les liens internes dans les articles
-		unset($_SESSION[__CLASS__]);
-		include 'inc/update-links.php';
+			$query = '#^(?:' . implode('|', $_POST['idArt']) . ')\..*\.xml$#';
+			echo self::BEGIN_CODE;
+?>
+$newCat = $_POST['<?= __CLASS__ ?>_cat'];
+if(!array_key_exists($newCat, $plxAdmin->aCats)) {
+	# Catégorie inconnue
+	return;
+}
+
+$artsRoot = PLX_ROOT . $plxAdmin->aConf['racine_articles'];
+foreach($plxAdmin->plxGlob_arts->query('<?= $query ?>') as $filename) {
+	# On renomme les  fichiers articles concernés
+	$parts = explode('.', $filename);
+	if(isset($parts[1])) {
+		$artCats = explode(',', $parts[1]);
+		$unclassified = array_search('000', $artCats);
+		if($unclassified !== false) {
+			unset($artCats[$unclassified]);
+		}
+		if(array_search($newCat, $artCats) === false) {
+			$artCats[] = $newCat;
+			# trier $artCats
+			$parts[1] = implode(',', $artCats);
+			$newFilename = implode('.' , $parts);
+			rename($artsRoot . $filename, $artsRoot . $newFilename);
+		}
+	}
+}
+
+header('Location: index.php');
+exit;
+<?php
+			echo self::END_CODE;
+		}
+	}
+
+	public function plxAdminEditCategoriesNew() {
+		echo self::BEGIN_CODE;
+?>
+$kzPlugin = $this->plxPlugins->aPlugins['<?= __CLASS__ ?>'];
+# Pour récupérer des valeurs par défaut
+$kzTemplate = $this->aCats[$cat_id];
+$kzTemplate['description'] = 'Add by <?= __CLASS__ ?> plugin';
+foreach($kzPlugin->newCats as $url=>$name) {
+	$this->aCats[$cat_id] = $kzTemplate;
+	$this->aCats[$cat_id]['name'] = $name;
+	if(strpos($url, 'ek_status_') === 0) {
+		$this->aCats[$cat_id]['menu'] = 'non';
+	}
+	$this->aCats[$cat_id]['url'] = $url;
+	$cat_id = $this->nextIdCategory();
+}
+<?php
+		echo self::END_CODE;
+	}
+
+	public function AdminIndexTop() {
+		ob_start();
+		ob_start(); # Against plxPlugins::callHook()
+	}
+
+	public function AdminIndexFoot() {
+		global $plxAdmin;
+
+		ob_get_clean(); # Against plxPlugins::callHook()
+		$output = ob_get_clean();
+		ob_start();
+?>
+<div class="in-action-bar <?= __CLASS__ ?>" method="post">
+	<?php plxToken::getTokenPostMethod() . PHP_EOL ?>
+	<span><?= $this->getLang('ADD_TO_CATEGORY') ?></span>
+	<select name="<?= __CLASS__?>_cat">
+		<option value="">....</option>
+<?php
+	foreach($plxAdmin->aCats as $id=>$infos) {
+?>
+		<option value="<?= $id ?>"><?= $infos['name'] ?></option>
+<?php
+	}
+?>
+	</select>
+	<input type="submit" name="<?= __CLASS__ ?>_add">
+</div>
+<?php
+		echo preg_replace('#(</div>)#', ob_get_clean() . '$1' , $output, 1);
 	}
 
 	public function ThemeEndBody() {

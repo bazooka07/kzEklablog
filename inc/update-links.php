@@ -1,6 +1,11 @@
 <?php
 # inclus dans le hook AdminIndexPrepend
 
+# Dans ce contexte, $this est le plugin
+
+# Pour afficher tous les categories (main-tag) utilisées dans les posts et pages de Eklablog :
+# sed  '/main-tag/!d; s/^[0-9]*\s*.*main-tag\///' kzEklablog-links.log | sort | uniq
+
 if(preg_match('#^(?:www\.)?([^\.]+)\.(' . self::HEBERGEUR . '|[a-z]+)$#', parse_url($hostname)['host'], $matches)) {
 	$name = $matches[1];
 	$ext = ($matches[2] == self::HEBERGEUR) ? '\.' : '\.(?:' . self::HEBERGEUR . '|' .  $matches[2] . ')';
@@ -15,13 +20,28 @@ if(preg_match('#^(?:www\.)?([^\.]+)\.(' . self::HEBERGEUR . '|[a-z]+)$#', parse_
 	$root = PLX_ROOT . $plxAdmin->aConf['racine_articles'];
 	$artsRoot = $plxAdmin->aConf['racine_articles'];
 
-	$links = array_flip(array_map(
-		function ($filename) {
-			return preg_replace('#.*\.([\w-]*)\.xml$#', '$1', $filename);
-		},
-		$plxAdmin->plxGlob_arts->aFiles
-	));
-	ksort($links);
+	$links = array(
+		'article' => array_flip(array_map(
+			function ($filename) {
+				return preg_replace('#.*\.([\w-]*)\.xml$#', '$1', $filename);
+			},
+			$plxAdmin->plxGlob_arts->aFiles
+		)),
+		'categorie' => array_map(function($value) {
+				return intval($value); # On réduit l'id de la catégorie à un entier
+			},
+			array_flip(array_map(
+				function($infos) {
+					return $infos['url'];
+				},
+				$plxAdmin->aCats
+			)
+		)),
+	);
+
+	foreach(array_keys($links) as $k) {
+		ksort($links[$k]);
+	}
 
 	$log_file = realpath(PLX_ROOT . PLX_CONFIG_PATH . 'plugins') . '/' . get_class($this) . '-links.log';
 	if(file_exists($log_file)) {
@@ -43,19 +63,30 @@ if(preg_match('#^(?:www\.)?([^\.]+)\.(' . self::HEBERGEUR . '|[a-z]+)$#', parse_
 				$replaces = array();
 				foreach($matches as $group) {
 					$href = $group[1];
-					if(empty($group[2])) {
-						# C'est un article
-						$url = $group[3];
-						$msg = $artId . "\t" . $href ."\t";
-						if(array_key_exists($url, $links)) {
-							$id = $links[$url];
-							$replaces[$group[0]] = 'href="index.php?article' . $id . '/' . $url . '"';
+					$msg = $artId . "\t" . $href ."\t";
+					$isArticle = empty($group[2]); # sinon categorie
+					$url = $isArticle ? $this->shorten_url($group[3]) : $this->shorten_main_tag($group[3]);
+					$item = $isArticle ? 'article' : 'categorie';
+					if(array_key_exists($url, $links[$item])) {
+						$id = $links[$item][$url];
+						$replaces[$group[0]] = 'href="index.php?' . $item . $id . '/' . $url . '"';
+						$msg .= '✅';
+					} elseif($isArticle) {
+						# url d'un main-tag invalide. On suppose que c'est une categorie
+						$url = $this->shorten_main_tag($group[3]);
+						$item = 'categorie';
+						if(array_key_exists($url, $links[$item])) {
+							$id = $links[$item][$url];
+							$replaces[$group[0]] = 'href="index.php?' . $item . $id . '/' . $url . '"';
 							$msg .= '✅';
 						} else {
-							$msg .= '❌';
+							$msg .= $isArticle ? '❌' : '❓';
 						}
-						error_log($msg . PHP_EOL, 3, $log_file);
 					}
+					else {
+						$msg .= $isArticle ? '❌' : '❓';
+					}
+					error_log($msg . PHP_EOL, 3, $log_file);
 				}
 
 				if(!empty($replaces)) {

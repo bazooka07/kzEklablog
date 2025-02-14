@@ -77,7 +77,7 @@
 	right: 2rem;
 }
 
-.kzEklablog.in-action-bar span:first-of-type {
+.kzEklablog.in-action-bar span.preview:first-of-type {
 	margin-right: 2rem;
 	padding: 0 0.5rem;
 	font-size: larger;
@@ -96,15 +96,14 @@
 	width: 33vw;
 	min-width: 200px;
 	padding: 0.5rem;
-	position: relative;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	color: #ccc;
-	cursor: pointer;
-	transition: .2s linear;
+	transition: .5s linear;
 	background: #ccc;
 	transform: translate(-50%, -50%);
+	border-radius: 2rem;
 }
 
 #spin-container:not(.active) {

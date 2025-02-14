@@ -18,6 +18,8 @@ $LANG = array(
 	'VIEW_IN_TABLE'			=> 'Vue sous forme de tableau',
 	'HOSTNAME'				=> 'Nom de domaine initial',
 	'SECONDS'				=> 'secondes',
+	'EK_PINNED'				=> 'Articles épinglés',
+	'EK_CAROUSEL'			=> 'Carroussel d\'images',
 	'EK_STATUS_1'			=> 'Brouillon (Ek)',
 	'EK_STATUS_2'			=> 'Publié (Ek)',
 	'EK_STATUS_3'			=> 'Modéré (Ek)',
@@ -25,5 +27,7 @@ $LANG = array(
 	'EK_STATUS_5'			=> 'État indéterminé (Ek)',
 	'EK_STATUS_6'			=> 'Corbeille (Ek)',
 	'EK_STATUS_7'			=> 'Accès restreint (Ek)',
+	'ADD_TO_CATEGORY'		=> 'Ajouter à la catégorie',
+	'MISSING_ARTICLE'		=> 'Aucun article sélectionné',
 );
 

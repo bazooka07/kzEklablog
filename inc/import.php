@@ -23,6 +23,73 @@
 				$artId = '0001';
 			}
 
+			/* ---------- Gestion des catégories et main-tag ----------- */
+
+			# On supprime toutes les catégories existantes
+			$plxAdmin->aCats= array();
+
+			$newCats = array();
+			foreach($eklablog->xpath('//tags[contains(text(), "' . $plxPlugin::MAIN_TAG . '")]') as $tag) {
+				$parts = explode(',', trim($tag));
+				if(($k = array_search($plxPlugin::MAIN_TAG, $parts)) !== false) {
+					$title = trim($tag->xpath('../title')[0]);
+					unset($parts[$k]);
+					if(!empty($parts)) {
+						$url = $plxPlugin->shorten_main_tag(array_values($parts)[0]);
+						# On évite les doublons avec la même url
+						if(!array_key_exists($url, $newCats)) {
+							$newCats[$url] = trim($tag->xpath('../title')[0]);
+						}
+					}
+				}
+			}
+
+			foreach(array('page', 'post') as $k) {
+				$url = 'ek_' . $k . 's';
+				$newCats[$url] = ucfirst($url);
+			}
+
+			# Quelques tags spéciaux de EKlablog : 2::pinned 2::carousel
+			foreach(array('2::pinned', '2::carousel') as $k) {
+				$url = preg_replace('#^\d::#', 'Ek_', $k);
+				$newCats[$url] = $plxPlugin->getLang(strtoupper($url));
+			}
+
+			# Catégories pour les status des posts et pages
+			for($i=1; $i<8; $i++) {
+				$url = 'ek_status_' . $i;
+				$newCats[$url] = $plxPlugin->getLang(strtoupper($url));
+			}
+
+			if(!empty($plxAdmin->aCats)) {
+				# On récupère les urls des catégories existantes
+				$urls = array_flip(array_map(
+					function($value) {
+						return $value['url'];
+					},
+					$plxAdmin->aCats
+				));
+
+				$newCats = array_filter(
+					$newCats,
+					function($url) use($urls) {
+						return !array_key_exists($url, $urls);
+					},
+					ARRAY_FILTER_USE_KEY
+				);
+			}
+
+			$plxPlugin->newCats = $newCats;
+			unset($newCats);
+
+			# On ajoute une nouvelle catégorie quelconque pour déclencher le hook plxAdminEditCategoriesNew
+			$plxAdmin->editCategories(array(
+				'new_category'	=> '1',
+				'new_catname'	=> $plugin,
+			));
+
+			/* ---------- importation des post et pages depuisla sauvegarde de Eklablog --- */
+
 			$imgListing =  array();
 			foreach(array('post', 'page',) as $p) {
 				$chk = 'import-' . $p;
@@ -38,71 +105,6 @@
 
 				$isPage = ($p == 'page');
 
-				# Categories de PluXml
-				$cats = array();
-				/*
-				if(!empty($defaultCat)) {
-					$cats[] = $defaultCat;
-				}
-				*/
-
-				foreach($eklablog->xpath($p . 's/' . $p . '/tags') as $tags) {
-					$parts = array_map('trim', explode(',', $tags));
-					if(in_array('2::main-tag', $parts)) {
-						$parents = $tags->xpath('../title');
-						$contents = $tags->xpath('../content');
-						if(!empty($parents) and !empty($contents)) {
-							if(!preg_match($plxPlugin::EMPTY_CONTENT, trim($contents[0]))) {
-								$cats[] = trim($parents[0]);
-							}
-						}
-					} else {
-						foreach($parts as $part) {
-							/*
-							 * tags spéciaux :
-							 *
-							 * 2::pinned
-							 * 2::carousel
-							 * */
-							$cats[] = preg_replace('#^\d::#', 'Ek_', $part);
-						}
-					}
-				}
-				sort($cats);
-				$cats = array_unique($cats);
-
-				# catégories supplémentaire pour étudier les status ds posts et page sde Eklablog
-				for($i=0; $i<10; $i++) {
-					$cats[] = 'Ek_status_' . $i;
-				}
-
-				$plx_cats = array_map(function($value) {
-					return $value['name'];
-				}, $plxAdmin->aCats);
-				foreach($cats as $k) {
-					if(!in_array($k, $plx_cats)) {
-						# Nouvelle catégorie
-						$plxAdmin->editCategories(array(
-							'new_category'	=> '1',
-							'new_catname'	=> ucfirst(strtolower($k)),
-						));
-						# On recharge la nouvelle liste
-						$plxAdmin->getCategories(path('XMLFILE_CATEGORIES'));
-					}
-				}
-
-				# catégories Ek_posts et Ek_pages de Eklablog
-				$name = 'Ek_' . $p . 's';
-				if(!in_array($name, $plx_cats)) {
-					# Nouvelle catégorie
-					$plxAdmin->editCategories(array(
-						'new_category'	=> '1',
-						'new_catname'	=> $name,
-					));
-					# On recharge la nouvelle liste
-					$plxAdmin->getCategories(path('XMLFILE_CATEGORIES'));
-				}
-
 				# On parcourt les posts et pages du blog Eklablog
 				foreach($eklablog->xpath($p . 's/' . $p) as $post) {
 					if(preg_match($plxPlugin::EMPTY_CONTENT, trim($post->content))) {
@@ -111,16 +113,16 @@
 					}
 
 					$ek_tags =trim($post->tags);
-					$name = 'Ek_' . $p . 's';
+					$name = 'ek_' . $p . 's';
 					if(empty($ek_tags)) {
 						$ek_tags = $name;
 					} else {
 						$ek_tags .= ',' . $name;
 					}
 
-					$pattern = '#(?:' . str_replace(',', '|', preg_replace('#\d::#', 'Ek_', $ek_tags)) . '|Ek_status_' . intval($post->status) .  ')#i';
+					$pattern = '#(?:' . str_replace(',', '|', preg_replace('#\d::#', 'Ek_', $ek_tags)) . '|ek_status_' . intval($post->status) .  ')#i';
 					$aCats = array_filter($plxAdmin->aCats, function($value) use($pattern) {
-						return preg_match($pattern, $value['name']);
+						return preg_match($pattern, $value['url']);
 					});
 					if(!empty($aCats)) {
 						$aCats = array_keys($aCats);
@@ -177,26 +179,11 @@
 					}
 
 					$url = str_replace('/', '_', preg_replace('#\.html?$#', '', trim($post->slug)));
-					if(strlen($url) > 64) {
-						# Shrinking $url
-						$parts = explode('-', $url); # E.G.: tableau-vivant-la-pedagogie-au-service-des-sens-et-du-sens-a216234061
-						$last = array_pop($parts);
-						$n = strlen($last);
-						$tmp = '';
-						foreach($parts as $p) {
-							if(strlen($tmp) + strlen($p) + 1 > 64) {
-								break;
-							}
-							$tmp .= $p . '-';
-						}
-						$tmp .= $last;
-						$url = $tmp;
-					}
 
 					$article = array(
 						'artId'					=> $artId,
 						'title'					=> trim($post->title), # cast String
-						'url'					=> $url,
+						'url'					=> $plxPlugin->shorten_url($url),
 						'chapo'					=> '',
 						'content'				=> $content,
 						'catId'					=> !empty($aCats) ? $aCats : '', # $aCats est un tableau. Peut-être vide
